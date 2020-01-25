@@ -1024,7 +1024,7 @@ def check_NOLA(window, nperseg, noverlap, tol=1e-10):
 
 def stft(x, fs=1.0, window='hann', nperseg=256, noverlap=None, nfft=None,
          detrend=False, return_onesided=True, boundary='zeros', padded=True,
-         axis=-1):
+         scaling='spectrum', axis=-1):
     r"""
     Compute the Short Time Fourier Transform (STFT).
 
@@ -1079,6 +1079,11 @@ def stft(x, fs=1.0, window='hann', nperseg=256, noverlap=None, nfft=None,
         Defaults to `True`. Padding occurs after boundary extension, if
         `boundary` is not `None`, and `padded` is `True`, as is the
         default.
+    scaling : { 'spectrum', 'none' }, optional
+        Selects between computing the cross spectrum ('spectrum') where `Pxy` 
+        has units of V**2, if `x` and `y` are measured in V and `fs` is 
+        measured in Hz and no scaling being applied ('none').
+        Defaults to 'spectrum'.
     axis : int, optional
         Axis along which the STFT is computed; the default is over the
         last axis (i.e. ``axis=-1``).
@@ -1169,9 +1174,12 @@ def stft(x, fs=1.0, window='hann', nperseg=256, noverlap=None, nfft=None,
     >>> plt.show()
     """
 
+    if scaling not in {'spectrum', 'none'}:
+        raise ValueError("Unknown scaling: %r" % scaling)
+
     freqs, time, Zxx = _spectral_helper(x, x, fs, window, nperseg, noverlap,
                                         nfft, detrend, return_onesided,
-                                        scaling='spectrum', axis=axis,
+                                        scaling=scaling, axis=axis,
                                         mode='stft', boundary=boundary,
                                         padded=padded)
 
@@ -1625,11 +1633,12 @@ def _spectral_helper(x, y, fs=1.0, window='hann', nperseg=None, noverlap=None,
         If `True`, return a one-sided spectrum for real data. If
         `False` return a two-sided spectrum. Defaults to `True`, but for
         complex data, a two-sided spectrum is always returned.
-    scaling : { 'density', 'spectrum' }, optional
+    scaling : { 'density', 'spectrum', 'none' }, optional
         Selects between computing the cross spectral density ('density')
-        where `Pxy` has units of V**2/Hz and computing the cross
+        where `Pxy` has units of V**2/Hz, computing the cross
         spectrum ('spectrum') where `Pxy` has units of V**2, if `x`
-        and `y` are measured in V and `fs` is measured in Hz.
+        and `y` are measured in V and `fs` is measured in Hz, and no scaling
+        method employed ('none').
         Defaults to 'density'
     axis : int, optional
         Axis along which the FFTs are computed; the default is over the
@@ -1803,6 +1812,8 @@ def _spectral_helper(x, y, fs=1.0, window='hann', nperseg=None, noverlap=None,
         scale = 1.0 / (fs * (win*win).sum())
     elif scaling == 'spectrum':
         scale = 1.0 / win.sum()**2
+    elif scaling == 'none':
+        scale = 1.0
     else:
         raise ValueError('Unknown scaling: %r' % scaling)
 
